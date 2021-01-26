@@ -49,7 +49,7 @@ class RedisDriverStorage
 
     public function setKey(string $key)
     {
-        $this->key= $key;
+        $this->key = $key;
     }
 
 }

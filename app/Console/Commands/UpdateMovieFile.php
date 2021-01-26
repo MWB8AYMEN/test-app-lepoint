@@ -43,7 +43,6 @@ class UpdateMovieFile extends Command
     {
         $nbrLines = $this->argument('nbrLines');
         $personIds = $this->dataMoviePersonService->findPersonsWithKwmLpNotNUl($nbrLines);
-        dump($personIds);
         if(!empty($personIds))
            $this->dataMoviePersonService->generateDataPersons($personIds);
 

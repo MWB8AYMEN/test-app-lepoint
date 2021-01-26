@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 
@@ -56,14 +57,14 @@ class DataMoviePersonService
         $results = $this->moviePersonRepository->getPersonsWithKwmLpNotNUll($nbrLines);
         $selectedPersons = [];
 
-        if($results->count() > 0){
+        if ($results->count() > 0) {
             $this->redisDriverStorage->setKey(self::REDIS_STORAGE_KEY);
-            foreach ($results as $result){
-                $attributes= $result->getAttributes();
+            foreach ($results as $result) {
+                $attributes = $result->getAttributes();
                 $this->redisDriverStorage->add($attributes['person_person_id']);
             }
 
-            $selectedPersons = $this->redisDriverStorage->get(0, $nbrLines-1);
+            $selectedPersons = $this->redisDriverStorage->get(0, $nbrLines - 1);
         }
 
         return $selectedPersons;
@@ -71,16 +72,18 @@ class DataMoviePersonService
 
     /**
      * @param array $personIds
+     * @return array
      */
-    public function generateDataPersons(array $personIds): void
+    public function generateDataPersons(array $personIds): array
     {
         $lines = [];
         $movies = [];
-        foreach ($personIds as $value){
+        foreach ($personIds as $value) {
             $data = $this->moviePersonRepository->getMoviesPersonInfo($value);
-            if($data->count() > 0){
-                foreach ($data as $raw){
+            if ($data) {
+                foreach ($data as $raw) {
                     $attributesRaw = $raw->getAttributes();
+
                     $lines[$attributesRaw['person_id']]['id'] = $attributesRaw['person_id'];
                     $lines[$attributesRaw['person_id']]['idPerson'] = $attributesRaw['person_id'];
                     $lines[$attributesRaw['person_id']]['suppression'] = 0;
@@ -100,7 +103,7 @@ class DataMoviePersonService
 
                     $picturesMovie = $this->pictureMovieRepository->getPicturesMovieInfo($attributesRaw['movie_id']);
 
-                    foreach($picturesMovie as $pictureMovie){
+                    foreach ($picturesMovie as $pictureMovie) {
                         $infoPicture = $pictureMovie->getAttributes();
                         $lines[$attributesRaw['person_id']]['content']['movies'][$attributesRaw['movie_id']]['content']['pictures'][] =
                             self::generatePictureMovie($infoPicture);
@@ -110,13 +113,16 @@ class DataMoviePersonService
                         self::generateFunctionsData($attributesRaw);
 
                 }
-                Storage::disk('public')->put($attributesRaw['person_id'].'.json', response()->json($lines[$attributesRaw['person_id']]));
+
+                Storage::disk('public')->put($value . '.json', response()->json($lines[$value]));
             }
         }
 
-        foreach($movies as $movieId){
+        foreach ($movies as $movieId) {
             $this->movieRepository->updateMovie($movieId);
         }
+
+        return $lines;
     }
 
     /**
@@ -125,7 +131,7 @@ class DataMoviePersonService
      */
     private static function generateMovieInfo(array $attributesRaw): array
     {
-        return ['title' => $attributesRaw['original_title'] ,
+        return ['title' => $attributesRaw['original_title'],
             'content' =>
                 [
                     'brightcove_id' => $attributesRaw['brightcove_id'],
@@ -153,7 +159,7 @@ class DataMoviePersonService
             'content' => [
                 'name' => basename($infoPicture['url']),
                 'url' => $infoPicture['url'],
-                'width' =>$infoPicture['width'],
+                'width' => $infoPicture['width'],
                 'height' => $infoPicture['height'],
                 'mime_type' => $infoPicture['mime_type'],
                 'picture_type' => $infoPicture['picture_type_picture_type_id']
@@ -181,7 +187,7 @@ class DataMoviePersonService
      */
     public function deleteProcessedPersonsIds($personIds): void
     {
-        foreach($personIds as $personId){
+        foreach ($personIds as $personId) {
 
             $this->redisDriverStorage->remove($personId);
         }
